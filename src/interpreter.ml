@@ -161,8 +161,9 @@ let rec eval (e:exp) (r: evT env) : evT = match e with
 			Edict d -> DictVal(apply_o ex d r)
       |_ -> failwith("Not a valid match"))
   | Get(iEl,expDict) -> 
-    (match expDict with
-      Edict(Item ((id,expr),restDict))-> if (id=iEl) then (eval expr r) else eval (Get(iEl,Edict(restDict))) r
+    (let v = eval expDict r in (*IMPLEMENTATA*)
+      match v with
+      DictVal(a) -> search_d a iEl
       | _ -> failwith("not a dictionary")
     )
   | Rm(iEl,expDict) ->
@@ -198,6 +199,11 @@ and add_d (d: dict) (i: ide) (eEl: exp) (r: evT env) : evDic =
   (match d with
     Empty -> let v = (eval eEl r) in Elem((i,v),EvEmpty)
     | Item((id,el),restDict) -> let v1 = eval el r in Elem((id,v1),(add_d restDict i eEl r))
+  )
+and search_d (d: evDic) (i: ide): evT =
+  (match d with
+    EvEmpty -> failwith("no element")
+    | Elem((id,el),restDict) -> if id=i then el else search_d restDict i
   )
 ;;
 
