@@ -156,9 +156,9 @@ let rec eval (e:exp) (r: evT env) : evT = match e with
   (*Implementazione progetto*)
   | Edict dDict -> DictVal(eval_d dDict r)
   | Clear dDict -> DictVal(eval_d Empty r)
-  | ApplyOver(ex,expDict)->
+  | ApplyOver(f,expDict)->
 		(match expDict with
-			Edict d -> DictVal(apply_o ex d r)
+			Edict d -> let fVal = eval f r in DictVal(apply_o fVal d r)
       |_ -> failwith("Not a valid match"))
   | Get(iEl,expDict) -> 
     (let v = eval expDict r in (*IMPLEMENTATA*)
@@ -182,11 +182,19 @@ and eval_d (d: dict) (r: evT env) : evDic =
   Empty -> EvEmpty
   | Item((idItem,expItem),restDict) -> Elem((idItem,eval expItem r), eval_d restDict r))
 
-and apply_o (f : exp) (d : dict) (r: evT env) : evDic =
-	(match d with
-	Empty -> EvEmpty
-	|Item((id,e),restDict) -> let e1 = (eval (Apply(f,e)) r) in
-                  Elem((id, e1), apply_o f restDict r))
+and apply_o (f : evT) (d : dict) (r: evT env) : evDic =
+  (
+    match f,d with
+    _,Empty -> EvEmpty
+    | Closure(par,body,envF),Item((id,el),restDict) ->
+      let elR = eval el r in 
+      Elem((id,(eval body (bind envF par elR))), apply_o f restDict r)
+    | RecClosure(g, (recArg,fBody,fDecEnv)),Item((id,el),restDict) -> 
+      let elR = eval el r in
+        let rEnv = bind fDecEnv g f in
+          let aEnv = bind rEnv recArg elR in
+            Elem((id, eval fBody aEnv),apply_o f restDict r)
+  )
 
 and remove_d (d: dict) (i: ide) (r: evT env) : evDic = 
   (match d with
