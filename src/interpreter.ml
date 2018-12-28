@@ -1,3 +1,4 @@
+
 (*
  -Dati Denotabili: Possono essere associati a un nome
  -Dati Esprimibili: se possono essere il risultato della valutazione di una espressione
@@ -150,80 +151,75 @@ let rec eval (e:exp) (r: evT env) : evT = match e with
   | Fun(param,body) -> Closure(param,body,r)
   | Letrec(fIde, funDef, letBody) ->
     (match funDef with
-    Fun(i, fBody) -> let r1 = (bind r fIde (RecClosure(fIde, (i, fBody, r)))) in
-      eval letBody r1 
-    | _ -> failwith("non functional def"))
+      Fun(i, fBody) -> let r1 = (bind r fIde (RecClosure(fIde, (i, fBody, r)))) in
+        eval letBody r1 
+      | _ -> failwith("non functional def")
+    )
   (*Implementazione progetto*)
   | Edict dDict -> DictVal(eval_d dDict r)
-  | Clear dDict -> DictVal(eval_d Empty r)
+  | Clear dDict -> DictVal(EvEmpty)
   | ApplyOver(f,expDict)->
-		(match expDict with
-			Edict d -> let fVal = eval f r in DictVal(apply_o fVal d r)
+		(match (eval expDict r) with
+			DictVal(d) -> let fVal = eval f r in DictVal(apply_o fVal d)
       |_ -> failwith("Not a valid match"))
-  | Get(iEl,expDict) -> 
-    (let v = eval expDict r in (*IMPLEMENTATA*)
+  | Get(iEl,expDict) -> (*IMPLEMENTATA*)
+    (let v = (eval expDict r) in 
       match v with
       DictVal(a) -> search_d a iEl
       | _ -> failwith("not a dictionary")
     )
   | Rm(iEl,expDict) ->
-    (match expDict with
-      Edict d -> DictVal(remove_d d iEl r)
+    (match (eval expDict r) with
+      DictVal(d) -> DictVal(remove_d d iEl r)
       | _ -> failwith("not a dictionary")
     )
   | Add((iEl,expEl),expDict) ->
-    (match expDict with
-      Edict d -> DictVal(add_d d iEl expEl r)
+    (match (eval expDict r) with
+      DictVal(d) -> DictVal(add_d d iEl (eval expEl  r) r)
       | _ -> failwith("not a dictionary")
     )
 
 and eval_d (d: dict) (r: evT env) : evDic = 
   (match d with
-  Empty -> EvEmpty
-  | Item((idItem,expItem),restDict) -> Elem((idItem,eval expItem r), eval_d restDict r))
+    Empty -> EvEmpty
+    | Item((idItem,expItem),restDict) -> 
+      if (check_d idItem restDict) then Elem((idItem,eval expItem r), eval_d restDict r)
+      else (eval_d restDict r)
+  )
 
-and apply_o (f : evT) (d : dict) (r: evT env) : evDic =
+and apply_o (f : evT) (d : evDic) : evDic =
   (
     match f,d with
-    _,Empty -> EvEmpty
-    | Closure(par,body,envF),Item((id,el),restDict) ->
-      let elR = eval el r in 
-      Elem((id,(eval body (bind envF par elR))), apply_o f restDict r)
-    | RecClosure(g, (recArg,fBody,fDecEnv)),Item((id,el),restDict) -> 
-      let elR = eval el r in
+    _,EvEmpty -> EvEmpty
+    | Closure(par,body,envF),Elem((id,el),restDict) ->
+      Elem((id,(eval body (bind envF par el))), apply_o f restDict)
+    | RecClosure(g, (recArg,fBody,fDecEnv)),Elem((id,el),restDict) ->
         let rEnv = bind fDecEnv g f in
-          let aEnv = bind rEnv recArg elR in
-            Elem((id, eval fBody aEnv),apply_o f restDict r)
+          let aEnv = bind rEnv recArg el in
+            Elem((id, eval fBody aEnv),apply_o f restDict)
+    | _ -> failwith("Not a function")
   )
 
-and remove_d (d: dict) (i: ide) (r: evT env) : evDic = 
+and remove_d (d: evDic) (i: ide) (r: evT env) : evDic = 
   (match d with
-    Empty -> EvEmpty
-    | Item((id,e),restDict) -> if id=i then (eval_d restDict r) else (remove_d restDict id r)
-    | _ -> failwith("not a dictionary")
+    EvEmpty -> EvEmpty
+    | Elem((id,e),restDict) -> if id=i then restDict else (remove_d restDict id r)
   )
 
-and add_d (d: dict) (i: ide) (eEl: exp) (r: evT env) : evDic =
+and add_d (d: evDic) (i: ide) (eEl: evT) (r: evT env) : evDic =
   (match d with
-    Empty -> let v = (eval eEl r) in Elem((i,v),EvEmpty)
-    | Item((id,el),restDict) -> let v1 = eval el r in Elem((id,v1),(add_d restDict i eEl r))
+    EvEmpty -> Elem((i,eEl),EvEmpty)
+    | Elem((id,el),restDict) -> Elem((id,el),(add_d restDict i eEl r))
   )
 and search_d (d: evDic) (i: ide): evT =
   (match d with
     EvEmpty -> failwith("no element")
     | Elem((id,el),restDict) -> if id=i then el else search_d restDict i
   )
+and check_d (i:ide) (d:dict) : bool =
+  (
+    match d with
+    Empty -> true
+    | Item((id,_),restDict) -> if id = i then false else check_d i restDict
+  )
 ;;
-
-(*TESTCASES*)
-  
-let env0 = emptyenv Unbound;;
-
-let dict1 = Edict(Item((("Nome"),(Estring "Fulvio")),Item((("Eta"),(Eint 21)),Empty)));;
-let dict2 = Edict(Item((("CINQUE:"),(Eint 5)),Item((("QUATTRO:"),(Eint 4)),Item((("TRE:"),(Eint 3)),Empty))));;
-let f = Fun("x",Diff(Den "x",Eint 1));;
-let a = Apply(Eint 3,f);;
-let test = ApplyOver(f,dict2);;
-let testget = Get("CINQUE:",dict2);;
-let removed = Rm("CINQUE:",dict2);;
-let added = Add((("SEI:"),(Eint 6)),dict2);;
