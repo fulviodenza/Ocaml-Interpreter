@@ -88,3 +88,18 @@ let testCinque =
       );;
       
 eval testCinque env0;; (*Apposto ce l'hai fatta*)
+
+let testSei = 
+    Let(
+        "nd",
+        Edict(
+            Item((("NomeDip0"),(Estring "Dipartimento Filosofia")),
+            Item((("NomeDip1"),(Estring "Dipartimento Lingue")),
+            Item((("NomeDip2"),(Estring "Dipartimento Ingegneria")),
+            Empty
+            )))
+        ),
+        Clear(Den "nd")
+    );;
+
+eval testSei env0;;

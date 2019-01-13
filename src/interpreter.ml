@@ -217,7 +217,7 @@ and remove_d (d: evDic) (i: ide) (r: evT env) : evDic =
 and add_d (d: evDic) (i: ide) (eEl: evT) (r: evT env) : evDic =
   (match d with
     EvEmpty -> Elem((i,eEl),EvEmpty)
-    | Elem((id,el),restDict) -> Elem((id,el),(add_d restDict i eEl r))
+    | Elem((id,el),restDict) -> if i = id then Elem((id,eEl),restDict) else Elem((id,el),(add_d restDict i eEl r))
   )
 and search_d (d: evDic) (i: ide): evT =
   (match d with
