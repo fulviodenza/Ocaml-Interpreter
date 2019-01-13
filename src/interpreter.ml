@@ -58,16 +58,24 @@ and evDic =
 (*TypeChecking, funzione che verra' usata nei descrittori*)
 let typecheck (s : string) (v : evT) : bool = match s with
    "int" -> 
-    (match v with
-      Int(_) -> true 
-      | _ -> false)|
+      (match v with
+        Int(_) -> true 
+        | _ -> false)|
    "bool" -> 
-    (match v with
-      Bool(_) -> true 
-      | _ -> false)|
+      (match v with
+        Bool(_) -> true 
+        | _ -> false)|
     "float" -> 
       (match v with
         Float(_) -> true
+        | _ -> false)|
+    "string" ->
+      (match v with
+        String(_) -> true
+        | _ -> false)|
+    "dict" ->
+      (match v with
+        DictVal(_) -> true
         | _ -> false)|
     _ -> failwith("Not a valid type");;
 

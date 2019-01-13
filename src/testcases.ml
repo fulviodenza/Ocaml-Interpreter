@@ -2,7 +2,7 @@
   
 let env0 = emptyenv Unbound;;
 
-let dict1 = Edict(Item((("Nome"),(Estring "Fulvio")),Item((("Eta"),(Eint 21)),Empty)));;
+let dict1 = Edict(Item((("Nome"),(Estring "Fulvio")),Item((("Eta"),(Eint 21)),Item((("Matricola"),(Eint 544006)),Empty))));;
 let dict2 = Edict(Item((("CINQUE:"),(Eint 5)),Item((("QUATTRO:"),(Eint 4)),Item((("TRE:"),(Eint 3)),Empty))));;
 let f = Fun("x",Diff(Den "x",Eint 1));;
 let a = Apply(Eint 3,f);;
@@ -14,100 +14,61 @@ let added = Add((("SEI:"),(Eint 6)),dict2);;
 
 
 (*Applicazione di funzione ricorsiva a dizionario*)
-let testGG =
-    Letrec(
-        "fact",
-        Fun(
-            "x",
-            Ifthenelse(
-                Eq(
-                    Den "x",
-                    Eint 0
-                ),
-                Eint 1,
-                Mul(
-                    Den "x",
-                    Apply(
-                        Den "fact",
-                        Diff(
-                            Den "x",
-                            Eint 1
-                        )
-                    )
-                )
-            )
-        ),
-        ApplyOver(
-            Den "fact",
-            dict2
-        )
-    )
-;;
-eval testGG env0;; (*worka fine gg*)
+let testRec = 
+    Letrec("fact",Fun("x",Ifthenelse(Eq(Den "x",Eint 0),Eint 1,Mul(Den "x",Apply(Den "fact",Diff(Den "x",Eint 1))))),
+    ApplyOver(Den "fact",dict2));;
+
+eval testRec env0;; (*it works!*)
+
 (* Il dizionario è davvero immutabile? *)
-let testGGDue =
+let testDue =
     Let(
         "d",
         Edict(
-            Item(
-                (
-                    "name",
-                    Estring "giua"
-                ),
-                Empty
-            )
+            Item(("NomeDip0",Estring "Dipartimento Giurisprudenza"),Empty)
         ),
         Let(
             "a",
-            Rm(
-                "name",
-                Den "d"
-            ),
-            Den "d"
+            Rm("NomeDip0",Den "d"),Den "d"
         )
-    )
-;;
-eval testGGDue env0;; (*YEEEEEAH RIMANE IMMUTATO, QUINDI FUNGE *)
+    );;
 
-let testGGTre = 
+eval testDue env0;; (*Si*)
+
+let testTre = 
     Let(
         "a",
         Edict(
-            Item(
-                ("nome", Estring "giua"),
-                Empty
-            )
+            Item(("NomeDip0", Estring "Dipartimento Matematica"),Empty)
         ),
         Add(
-            ("nome",
-            Estring "luiggi"),
+            ("NomeDip1",
+            Estring "Dipartimento Informatica"),
             Den "a"
         )
     )
 ;;
 
-eval testGGTre env0;; (*Funge anche questa gggg fulvio*)
+eval testTre env0;; (*ok*)
 
-let testGGQuattro = 
+let testQuattro = 
     Let(
-        "a",
+        "ld",
         Edict(
-            Item(
-                ("nome", Estring "giua"),
-                Empty
-            )
+            Item(("NomeDip", Estring "Dipartimento Lettere"),Empty)
         ),
         Get(
-            "nome",
-            Den "a"
+            "NomeDip",
+            Den "ld"
         )
     )
 ;;
 
-eval testGGQuattro env0;; (*Come vedi this funziona*)
-let testGGCinque = 
+eval testQuattro env0;; (*ok*)
+
+let testCinque = 
   Let(
-        "a",
+        "ls",
         Edict(
             Item(
                 ("eta", Eint 20),
@@ -122,7 +83,8 @@ let testGGCinque =
                  Den "x"
                )
             ),
-            Den "a"
+            Den "ls"
         )
       );;
-eval testGGCinque env0;; (*Apposto ce l'hai fatta*)
+      
+eval testCinque env0;; (*Apposto ce l'hai fatta*)
